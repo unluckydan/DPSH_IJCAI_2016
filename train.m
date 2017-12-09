@@ -1,5 +1,6 @@
 function [net, U] = train (X1, L1, U, net, iter , lr, batchsize)
     N = size(X1,4) ;
+    lambda = 0.4
     index = randperm(N) ;
     for j = 0:ceil(N/batchsize)-1
         batch_time=tic ;
@@ -18,9 +19,13 @@ function [net, U] = train (X1, L1, U, net, iter , lr, batchsize)
         U0 = squeeze(gather(res(end).x))' ;
         U(ix,:) = U0 ;
         % T : theta
+        B = sign(U);
+        B0 = sign(U0);
         T = U0 * U' / 2 ;
+        T1 = B0 * B'/ 2;
         A = 1 ./ (1 + exp(-T)) ;
-        dJdU = (S - A) * U ;    
+        A1 = 1 ./ (1 + exp(-T1));
+        dJdU = (S - A) * U + lambda*(A1 - A) * U;    
         dJdoutput = gpuArray(reshape(dJdU',[1,1,size(dJdU',1),size(dJdU',2)])) ;
         res = vl_simplenn( net, im_, dJdoutput) ;
         %% update the parameters of CNN
